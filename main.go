@@ -64,15 +64,23 @@ func (n *oneAndOnlyNumber) notifyValue(curVal int, curGeneration int) bool {
 // ----------------------------------------------------------------------------
 
 // Setup the Serf Cluster
-func setupSerfCluster(advertiseAddr string, clusterAddr string) (*serf.Serf, error) {
+func setupSerfCluster(advertiseAddr string, clusterAddr string, eventChannel chan<- serf.Event) (*serf.Serf, error) {
+
+	// Configuration values.
+
 	configuration := serf.DefaultConfig()
 	configuration.Init()
 	configuration.MemberlistConfig.AdvertiseAddr = advertiseAddr
+	configuration.EventCh = eventChannel
+
+	// Create the Serf cluster with the configuration.
 
 	cluster, err := serf.Create(configuration)
 	if err != nil {
 		return nil, errors.Wrap(err, "Couldn't create cluster")
 	}
+
+	// Try to join an existing Serf cluster.  If not, start a new cluster.
 
 	_, err = cluster.Join([]string{clusterAddr}, true)
 	if err != nil {
@@ -84,10 +92,13 @@ func setupSerfCluster(advertiseAddr string, clusterAddr string) (*serf.Serf, err
 
 // Get a list of members in the cluster.
 func getClusterMembers(cluster *serf.Serf) []serf.Member {
-	members := cluster.Members()
 	var result []serf.Member
 
-	// Don't add this instance nor failed instances.
+	// Get all members in all states.
+
+	members := cluster.Members()
+
+	// Filter list. Don't add this instance nor failed instances.
 
 	for _, member := range members {
 		if member.Name != cluster.LocalMember().Name && member.Status == serf.StatusAlive {
@@ -105,7 +116,6 @@ func notifyMember(ctx context.Context, addr string, db *oneAndOnlyNumber) error 
 		return errors.Wrap(err, "Couldn't create request")
 	}
 	req = req.WithContext(ctx)
-
 	_, err = http.DefaultClient.Do(req)
 	if err != nil {
 		return errors.Wrap(err, "Couldn't make request")
@@ -140,6 +150,28 @@ func notifyMembers(ctx context.Context, otherMembers []serf.Member, db *oneAndOn
 	err := g.Wait()
 	if err != nil {
 		log.Printf("Error when notifying other members: %v", err)
+	}
+}
+
+// Handle any of the Serf event types.
+func serfEventHandler(event serf.Event) {
+	switch event.EventType() {
+	case serf.EventMemberFailed:
+		log.Printf("EventMemberFailed: %s\n", event.String())
+	case serf.EventMemberJoin:
+		log.Printf("EventMemberJoin: %s\n", event.String())
+	case serf.EventMemberLeave:
+		log.Printf("EventMemberLeave: %s\n", event.String())
+	case serf.EventMemberReap:
+		log.Printf("EventMemberReap: %s\n", event.String())
+	case serf.EventMemberUpdate:
+		log.Printf("EventMemberUpdate: %s\n", event.String())
+	case serf.EventQuery:
+		log.Printf("EventQuery: %s\n", event.String())
+	case serf.EventUser:
+		log.Printf("EventUser: %s\n", event.String())
+	default:
+		log.Printf("[WARN] on: Unhandled Serf Event: %#v", event)
 	}
 }
 
@@ -209,11 +241,16 @@ func httpRouter(database *oneAndOnlyNumber) {
 
 func main() {
 
+	// Create a channel to receive Serf events.
+
+	eventChannel := make(chan serf.Event, 256)
+
 	// Initialize or join Serf cluster.
 
 	serfCluster, err := setupSerfCluster(
 		os.Getenv("ADVERTISE_ADDR"),
-		os.Getenv("CLUSTER_ADDR"))
+		os.Getenv("CLUSTER_ADDR"),
+		eventChannel)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -242,6 +279,11 @@ func main() {
 
 	for {
 		select {
+
+		// Handle events
+
+		case event := <-eventChannel:
+			serfEventHandler(event)
 
 		// Notification among serf members.
 

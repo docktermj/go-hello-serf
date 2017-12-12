@@ -43,20 +43,33 @@ If gateway is not 172.17.0.1, the following `docker` statements need to be modif
 In terminal #2
 
 ```console
-docker run -e ADVERTISE_ADDR=172.17.0.2 -p 8080:8080 local/go-hello-serf-demo
+docker run -e ADVERTISE_ADDR=172.17.0.2 -p 8080:8080 -p 7946 -p 7373 local/go-hello-serf-demo
 ```
 
 In terminal #3
 
 ```console
-docker run -e ADVERTISE_ADDR=172.17.0.3 -e CLUSTER_ADDR=172.17.0.2 -p 8081:8080 local/go-hello-serf-demo
+docker run -e ADVERTISE_ADDR=172.17.0.3 -e CLUSTER_ADDR=172.17.0.2 -p 8081:8080 -p 7946 -p 7373 local/go-hello-serf-demo
 ```
 
 In terminal #4
 
 ```console
-docker run -e ADVERTISE_ADDR=172.17.0.4 -e CLUSTER_ADDR=172.17.0.3 -p 8082:8080 local/go-hello-serf-demo
+docker run -e ADVERTISE_ADDR=172.17.0.4 -e CLUSTER_ADDR=172.17.0.3 -p 8082:8080 -p 7946 -p 7373 local/go-hello-serf-demo
 ```
+
+In terminal #5
+
+```console
+serf agent -join 172.17.0.2
+```
+
+In terminal #6
+
+```console
+serf members
+```
+
 
 ## Development
 
