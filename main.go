@@ -154,14 +154,6 @@ func notifyMembers(ctx context.Context, otherMembers []serf.Member, db *oneAndOn
 	}
 }
 
-func reverse(s string) string {
-	var result string
-	for i := len(s) - 1; i >= 0; i-- {
-		result += string(s[i])
-	}
-	return result
-}
-
 // Example query responses.
 func queryResponse(event serf.Event) {
 	result := ""
@@ -285,6 +277,9 @@ func main() {
 	// Initialized "internal data".
 
 	theOneAndOnlyNumber := InitTheNumber(0)
+	
+	// Initialize HTTP routing.
+	
 	httpRouter(theOneAndOnlyNumber)
 
 	// Create a base context with hostname, if possible.
