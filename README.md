@@ -1,9 +1,5 @@
 # go-hello-serf
 
-Build `go-hello-serf-M.m.P-I.x86_64.rpm`
-and   `go-hello-serf_M.m.P-I_amd64.deb`
-where "M.m.P-I" is Major.minor.Patch-Iteration.
-
 ## Usage
 
 A simple program to show how to integrate
@@ -64,12 +60,17 @@ In terminal #5
 serf agent -join 172.17.0.2
 ```
 
-In terminal #6
+In terminal #6, try these commands
 
 ```console
 serf members
-```
+serf query time
+serf event bob
 
+curl -v http://localhost:8080/get | jq
+curl -v http://localhost:8082/set/7
+curl -v http://localhost:8080/get | jq
+```
 
 ## Development
 

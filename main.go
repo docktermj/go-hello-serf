@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"math/rand"
@@ -24,36 +25,36 @@ const MembersToNotify = 2
 // ----------------------------------------------------------------------------
 
 type oneAndOnlyNumber struct {
-	num        int
-	generation int
+	Number     int `json:"number"`
+	Generation int `json:"generation"`
 	numMutex   sync.RWMutex
 }
 
 func InitTheNumber(val int) *oneAndOnlyNumber {
 	return &oneAndOnlyNumber{
-		num: val,
+		Number: val,
 	}
 }
 
 func (n *oneAndOnlyNumber) setValue(newVal int) {
 	n.numMutex.Lock()
 	defer n.numMutex.Unlock()
-	n.num = newVal
-	n.generation = n.generation + 1
+	n.Number = newVal
+	n.Generation = n.Generation + 1
 }
 
 func (n *oneAndOnlyNumber) getValue() (int, int) {
 	n.numMutex.RLock()
 	defer n.numMutex.RUnlock()
-	return n.num, n.generation
+	return n.Number, n.Generation
 }
 
 func (n *oneAndOnlyNumber) notifyValue(curVal int, curGeneration int) bool {
-	if curGeneration > n.generation {
+	if curGeneration > n.Generation {
 		n.numMutex.Lock()
 		defer n.numMutex.Unlock()
-		n.generation = curGeneration
-		n.num = curVal
+		n.Generation = curGeneration
+		n.Number = curVal
 		return true
 	}
 	return false
@@ -153,6 +154,30 @@ func notifyMembers(ctx context.Context, otherMembers []serf.Member, db *oneAndOn
 	}
 }
 
+func reverse(s string) string {
+	var result string
+	for i := len(s) - 1; i >= 0; i-- {
+		result += string(s[i])
+	}
+	return result
+}
+
+// Example query responses.
+func queryResponse(event serf.Event) {
+	result := ""
+	query := event.String()
+	responder := event.(*serf.Query)
+	switch query {
+	case "query: bob":
+		result = "Bob was here"
+	case "query: mary":
+		result = "Mary was here"
+	case "query: time":
+		result = time.Now().String()
+	}
+	responder.Respond([]byte(result))
+}
+
 // Handle any of the Serf event types.
 func serfEventHandler(event serf.Event) {
 	switch event.EventType() {
@@ -168,6 +193,7 @@ func serfEventHandler(event serf.Event) {
 		log.Printf("EventMemberUpdate: %s\n", event.String())
 	case serf.EventQuery:
 		log.Printf("EventQuery: %s\n", event.String())
+		queryResponse(event)
 	case serf.EventUser:
 		log.Printf("EventUser: %s\n", event.String())
 	default:
@@ -181,8 +207,8 @@ func serfEventHandler(event serf.Event) {
 
 // Get the value in the database.
 func httpGet(response http.ResponseWriter, request *http.Request, database *oneAndOnlyNumber) {
-	val, _ := database.getValue()
-	fmt.Fprintf(response, "%v", val)
+	myJson, _ := json.Marshal(database)
+	fmt.Fprintf(response, "%s", myJson)
 }
 
 //  Set the value in the database.
@@ -275,12 +301,12 @@ func main() {
 	numberBroadcastTick := time.Second * 2
 	numberBroadcastTicker := time.Tick(numberBroadcastTick)
 
-	// Handle "ticks"
+	// Handle "ticks" and events.
 
 	for {
 		select {
 
-		// Handle events
+		// Handle events.
 
 		case event := <-eventChannel:
 			serfEventHandler(event)
