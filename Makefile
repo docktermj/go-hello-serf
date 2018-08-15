@@ -27,6 +27,7 @@ build-local:
 test-local:
 	go test github.com/docktermj/$(PROGRAM_NAME)/... 
 
+
 # -----------------------------------------------------------------------------
 # Docker-based development
 # -----------------------------------------------------------------------------
@@ -59,7 +60,7 @@ docker-build:
 .PHONY: build-demo
 build-demo: build-local
 	mkdir -p $(TARGET_DIRECTORY) || true
-	cp ${GOPATH}/bin//$(PROGRAM_NAME) $(TARGET_DIRECTORY)
+	cp ${GOPATH}/bin/$(PROGRAM_NAME) $(TARGET_DIRECTORY)
 	docker build \
 		--tag $(DOCKER_IMAGE_NAME)-demo \
 		--file demo.Dockerfile \
@@ -81,12 +82,8 @@ docker-run:
 
 .PHONY: dependencies
 dependencies:
-	go get -u github.com/jstemmer/go-junit-report
-	go get -u github.com/hashicorp/serf/client
-	go get -u github.com/gorilla/mux
-	go get -u github.com/hashicorp/serf/serf
-	go get -u github.com/pkg/errors
-	go get -u golang.org/x/sync/errgroup	
+	go get -u github.com/golang/dep/cmd/dep
+	dep ensure
 	
 
 .PHONY: clean

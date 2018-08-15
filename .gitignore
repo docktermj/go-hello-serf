@@ -14,3 +14,4 @@
 .glide/
 
 target/
+vendor/

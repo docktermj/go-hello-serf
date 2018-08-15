@@ -28,13 +28,13 @@ cd ${REPOSITORY_DIR}
 make build-demo
 ```
 
-In any terminal, find docker gateway
+Verify `docker` network is 172.17.0.1.
+If gateway is not 172.17.0.1, the following `docker` statements need to be modified before being run.
 
 ```console
-docker network inspect bridge | grep Gateway
+$ docker network inspect bridge | grep Gateway
+                   "Gateway": "172.17.0.1"
 ```
-
-If gateway is not 172.17.0.1, the following `docker` statements need to be modified before being run.
 
 In terminal #2
 
@@ -113,12 +113,14 @@ The results will be in the `${GOPATH}/bin` directory.
 
 #### Docker build
 
+Create `rpm` and `deb` installation packages.
+
 ```console
 cd ${REPOSITORY_DIR}
 make build
 ```
 
-The results will be in the `.../target` directory.
+The results will be in the `${REPOSITORY_DIR}/target` directory.
 
 ### Test
 
@@ -168,6 +170,6 @@ cd ${REPOSITORY_DIR}
 make clean
 ```
 
-### Referenes
+### References
 
 1. [Building a simple, distributed one-value database with Hashicorp Serf](https://jacobmartins.com/2017/01/29/practical-golang-building-a-simple-distributed-one-value-database-with-hashicorp-serf/)
