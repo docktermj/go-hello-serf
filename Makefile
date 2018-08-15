@@ -1,4 +1,4 @@
-# Makefile that builds go-hello-serf, a "go" program.
+# Makefile that builds a "go" program.
 
 # PROGRAM_NAME is the name of the GIT repository.
 PROGRAM_NAME := $(shell basename `git rev-parse --show-toplevel`)
